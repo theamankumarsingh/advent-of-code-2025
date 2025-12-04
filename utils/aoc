@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+RED="\033[1;31m"
+RESET="\033[0m"
+
+prog="$(basename "$0")"
+
+usage() {
+  cat <<EOF
+Usage:
+  $prog DAY PART            (e.g. $prog 5 2)
+  $prog DAY-PART            (e.g. $prog 5-2)
+  $prog DAY PART [ARGS...]  (e.g. $prog 5 2 arg1 arg2)
+
+Runs: Day <DAY>/<DAY>-<PART>.py using python3 and forwards any extra args.
+EOF
+  exit 1
+}
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+
+if [ "$#" -lt 1 ]; then
+  echo "$prog - tiny launcher to run AoC solution files" >&2
+  echo >&2
+  usage
+fi
+
+if [[ "$1" =~ ^([0-9]{1,2})-([0-9]{1,2})$ ]]; then
+  day="${BASH_REMATCH[1]}"
+  part="${BASH_REMATCH[2]}"
+  shift
+elif [[ "$#" -ge 2 ]]; then
+  day="$1"
+  part="$2"
+  shift 2
+else
+  echo -e "${RED}ERROR:${RESET} Invalid argument format." >&2
+  echo >&2
+  usage
+fi
+
+if ! [[ "$day" =~ ^[0-9]+$ ]] || ! [[ "$part" =~ ^[0-9]+$ ]]; then
+  echo -e "${RED}ERROR:${RESET} Invalid argument format." >&2
+  echo >&2
+  usage
+fi
+
+day_n=$((10#$day))
+part_n=$((10#$part))
+
+if [ "$day_n" -lt 1 ] || [ "$day_n" -gt 31 ] || [ "$part_n" -lt 1 ] || [ "$part_n" -gt 2 ]; then
+  echo -e "${RED}ERROR:${RESET} DAY must be 1..31 and PART must be 1 or 2." >&2
+  exit 2
+fi
+
+script_path="$repo_root/Day $day_n/$day_n-$part_n.py"
+
+if [ ! -f "$script_path" ]; then
+  echo -e "${RED}ERROR:${RESET} Script ${day_n}-${part_n}.py not found." >&2
+  exit 3
+fi
+
+# Run with python3, forwarding any remaining args
+exec python3 "$script_path" "$@"

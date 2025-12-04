@@ -1,0 +1,52 @@
+name: Update README with AoC Progress
+
+# Run on pushes to main and allow manual runs
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    # Skip if the last commit was made by this workflow
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Run update_progress script
+        run: python3 utils/update_progress
+
+      - name: Show README diff (for logging)
+        run: git --no-pager diff -- README.md || true
+
+      - name: Commit & push README.md if updated
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "AoC progress unchanged — no commit needed."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add README.md
+          git commit -m "Update Advent of Code progress (Automated)"
+
+          git push origin HEAD:main

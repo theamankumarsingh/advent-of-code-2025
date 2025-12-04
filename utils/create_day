@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+
+"""create_day utility.
+
+Behavior:
+- ALWAYS works relative to the repository root (even if run from another directory).
+- Uses an internal default template for generated part files.
+- Creates missing files only (does NOT overwrite).
+
+Usage:
+  ./create_day       -> create today's Day <n>
+  ./create_day 5     -> create Day 5
+
+Creates (if missing):
+  Day N/
+    N-input.txt
+    N-1.py
+    N-2.py
+"""
+
+from pathlib import Path
+from datetime import datetime
+import sys
+
+BASE = Path(__file__).resolve().parent.parent
+
+DEFAULT_TEMPLATE = """#!/usr/bin/env python3
+
+\"\"\"Day {day} - Part {part}\"\"\"
+
+from pathlib import Path
+
+def read_input():
+    return Path(__file__).with_name(f\"{day}-input.txt\").read_text().splitlines()
+
+def solve(lines):
+    # TODO: implement {day}-{part} solution
+    return None
+
+if __name__ == '__main__':
+    print(solve(read_input()))
+"""
+
+def make_day(n: int) -> int:
+    if not (1 <= n <= 31):
+        raise ValueError("day must be 1..31")
+
+    d = BASE / f"Day {n}"
+    d.mkdir(parents=True, exist_ok=True)
+    created = 0
+
+    p_input = d / f"{n}-input.txt"
+    p1 = d / f"{n}-1.py"
+    p2 = d / f"{n}-2.py"
+
+    # Create empty input file (if missing)
+    if not p_input.exists():
+        p_input.touch()
+        created += 1
+
+    # Part 1 (create if missing)
+    if not p1.exists():
+        p1.write_text(DEFAULT_TEMPLATE.format(day=n, part=1))
+        try:
+            p1.chmod(0o755)
+        except Exception:
+            pass
+        created += 1
+
+    # Part 2 (create if missing)
+    if not p2.exists():
+        p2.write_text(DEFAULT_TEMPLATE.format(day=n, part=2))
+        try:
+            p2.chmod(0o755)
+        except Exception:
+            pass
+        created += 1
+
+    return created
+
+def parse_arg():
+    if len(sys.argv) <= 1:
+        return None
+    try:
+        return int(sys.argv[1])
+    except ValueError:
+        print("Argument must be an integer 1..31", file=sys.stderr)
+        sys.exit(2)
+
+def main():
+    arg = parse_arg()
+    day = arg if arg is not None else datetime.now().day
+    created = make_day(day)
+
+    if created:
+        print(f"Created {created} file(s) for Day {day}")
+    else:
+        print(f"Day {day} already exists")
+
+if __name__ == '__main__':
+    main()

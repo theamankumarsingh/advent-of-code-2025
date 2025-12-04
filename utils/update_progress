@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+
+"""
+update_progress - Advent of Code progress updater (tamper-proof).
+
+Behavior:
+- Total days read from README using strict match: **<N> Days**
+  e.g., "covering **12 Days** Total."
+- Part is solved if its file exists AND does not contain the exact line:
+      # TODO: implement {day}-{part} solution
+- Progress bar increments only when BOTH parts solved.
+- Stars table shows ⭐ for solved parts, ☐ otherwise.
+- Rewrites the entire progress & daily sections every run, deleting ANY content
+  between:
+      ## 📊 Progress Tracker  → next heading
+      ## ⭐ Daily Completion Status → next heading
+- Works even if section names or heading levels change.
+"""
+
+from pathlib import Path
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parent.parent
+README = ROOT / "README.md"
+
+PROGRESS_HEADER = "## 📊 Progress Tracker"
+DAILY_HEADER = "## ⭐ Daily Completion Status"
+
+def extract_total_days():
+    text = README.read_text(encoding="utf-8")
+
+    m = re.search(r"\*\*\s*(\d+)\s+Days\s*\*\*", text)
+    if not m:
+        print("ERROR: Could not find pattern '**<N> Days**' in README.")
+        sys.exit(1)
+
+    return int(m.group(1))
+
+def part_solved(day: int, part: int) -> bool:
+    p = ROOT / f"Day {day}" / f"{day}-{part}.py"
+    if not p.exists():
+        return False
+
+    todo_line = rf"#\s*TODO:\s*implement\s*{day}-{part}\s*solution"
+    todo_re = re.compile(rf"^\s*{todo_line}\s*$", re.IGNORECASE)
+
+    try:
+        for line in p.read_text(encoding="utf-8").splitlines():
+            if todo_re.match(line):
+                return False
+    except Exception:
+        return False
+
+    return True
+
+def scan_days(total):
+    days = []
+    for d in range(1, total + 1):
+        days.append({
+            "day": d,
+            "p1": part_solved(d, 1),
+            "p2": part_solved(d, 2),
+        })
+    return days
+
+def make_progress_bar(done, total):
+    filled = "█" * done
+    empty = "░" * (total - done)
+    return f"| {filled}{empty} | {done}/{total} Days Completed |"
+
+def render_table(days):
+    out = [
+        "| Day | Part 1 | Part 2 |\n",
+        "|-----|--------|--------|\n",
+    ]
+    for d in days:
+        p1 = "⭐" if d["p1"] else "☐"
+        p2 = "⭐" if d["p2"] else "☐"
+        out.append(f"| Day {d['day']} | {p1} | {p2} |\n")
+    return "".join(out)
+
+def extract_section(text, header):
+    if header not in text:
+        print(f"ERROR: Heading '{header}' not found in README.")
+        sys.exit(1)
+
+    before, after = text.split(header, 1)
+
+    lines = after.splitlines(keepends=True)
+
+    idx = None
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("#"):
+            idx = i
+            break
+
+    if idx is None:
+        print(f"ERROR: Could not find next markdown heading after '{header}'.")
+        sys.exit(1)
+
+    between = "".join(lines[:idx])
+    tail = "".join(lines[idx:])
+
+    return before, between, tail
+
+def update_readme(days, total):
+    text = README.read_text(encoding="utf-8")
+
+    done_days = sum(1 for d in days if d["p1"] and d["p2"])
+
+    new_progress_section = (
+        f"{PROGRESS_HEADER}\n\n"
+        "| Progress | Status |\n"
+        "|---------|--------|\n"
+        f"{make_progress_bar(done_days, total)}\n\n"
+    )
+
+    new_table_section = (
+        f"{DAILY_HEADER}\n\n"
+        f"{render_table(days)}\n"
+    )
+
+    before_progress, old_progress_block, tail_after_progress = extract_section(text, PROGRESS_HEADER)
+
+    before_daily, old_daily_block, tail_after_daily = extract_section(tail_after_progress, DAILY_HEADER)
+
+    new_text = (
+        before_progress
+        + new_progress_section
+        + before_daily
+        + new_table_section
+        + tail_after_daily
+    )
+
+    README.write_text(new_text, encoding="utf-8")
+
+    compact = " ".join(
+        f"{d['day']}:" +
+        ("*" if d["p1"] else "-") +
+        ("*" if d["p2"] else "-")
+        for d in days
+    )
+
+    print(f"{done_days}/{total} | {compact}")
+
+def main():
+    total = extract_total_days()
+    days = scan_days(total)
+    update_readme(days, total)
+
+if __name__ == "__main__":
+    main()
