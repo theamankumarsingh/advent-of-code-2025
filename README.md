@@ -18,7 +18,7 @@ The `utils/` folder includes helper utilities to auto-generate day folders and s
 
 | Progress | Status |
 |---------|--------|
-| █████░░░░░░░ | 5/12 Days Completed |
+| ██████░░░░░░ | 6/12 Days Completed |
 
 ## ⭐ Daily Completion Status
 
@@ -29,7 +29,7 @@ The `utils/` folder includes helper utilities to auto-generate day folders and s
 | Day 3 | ⭐ | ⭐ |
 | Day 4 | ⭐ | ⭐ |
 | Day 5 | ⭐ | ⭐ |
-| Day 6 | ☐ | ☐ |
+| Day 6 | ⭐ | ⭐ |
 | Day 7 | ☐ | ☐ |
 | Day 8 | ☐ | ☐ |
 | Day 9 | ☐ | ☐ |
