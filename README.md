@@ -35,7 +35,7 @@ The `utils/` folder includes helper utilities to auto-generate day folders and s
 | Day 9 | ⭐ | ☐ |
 | Day 10 | ⭐ | ☐ |
 | Day 11 | ⭐ | ⭐ |
-| Day 12 | ☐ | ☐ |
+| Day 12 | ⭐ | ☐ |
 
 ## 🚀 Usage
 
